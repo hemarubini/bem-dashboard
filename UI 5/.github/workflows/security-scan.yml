@@ -1,0 +1,297 @@
+name: Security Scan
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+  id-token: write
+
+jobs:
+  security-scan:
+    if: |
+      (startsWith(github.head_ref, 'feature/') && github.base_ref == 'develop') ||
+      (github.head_ref == 'develop' && github.base_ref == 'stage') ||
+      (github.head_ref == 'stage' && github.base_ref == 'main')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::302263040839:role/Githubactions
+          aws-region: ap-south-1
+
+      - name: Install Bandit and Checkov
+        run: |
+          pip install bandit checkov
+
+      - name: Set environment for plan
+        id: set_env
+        run: |
+          if [[ "${{ github.head_ref }}" == feature/* && "${{ github.base_ref }}" == "develop" ]]; then
+              echo "TFVARS=dev.tfvars" >> $GITHUB_ENV
+          elif [[ "${{ github.head_ref }}" == "develop" && "${{ github.base_ref }}" == "main" ]]; then
+              echo "TFVARS=prod.tfvars" >> $GITHUB_ENV
+          else
+              echo "TFVARS=dev.tfvars" >> $GITHUB_ENV # Default fallback
+          fi
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init
+        run: terraform init
+        working-directory: Terraform
+
+      - name: Terraform Plan
+        run: terraform plan -var-file=./environments/${TFVARS} -out=tfplan.binary
+        working-directory: Terraform
+
+      - name: Convert Plan to JSON
+        run: terraform show -json tfplan.binary > tfplan.json
+        working-directory: Terraform
+
+      - name: Run Bandit
+        run: bandit -r . -f json -o bandit-report.json || true
+
+      - name: Run Checkov (scan plan, not .tf)
+        run: checkov -f tfplan.json --repo-root-for-plan-enrichment . -o json > checkov-report.json || true
+        working-directory: Terraform
+
+      - name: Post PR comments for infra failures
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          COMMIT_ID: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if [ -f Terraform/checkov-report.json ] && jq -e '.results.failed_checks | length > 0' Terraform/checkov-report.json > /dev/null; then
+            jq -c '.results.failed_checks[]' Terraform/checkov-report.json | while read -r issue; do
+              PATH_TO_FILE=$(echo "$issue" | jq -r '.file_path')
+              LINE=$(echo "$issue" | jq -r '.file_line_range[0]')
+              BODY=$(echo "$issue" | jq -r '.check_id + ": " + .check_name')
+              if [[ -n "$PATH_TO_FILE" && -n "$LINE" && -n "$BODY" ]]; then
+                DISPLAY_PATH="Terraform/${PATH_TO_FILE}"
+                echo "Posting comment for: $BODY at $DISPLAY_PATH:$LINE"
+                curl -L -X POST \
+                  -H "Accept: application/vnd.github+json" \
+                  -H "Authorization: Bearer $GITHUB_TOKEN" \
+                  -H "X-GitHub-Api-Version: 2022-11-28" \
+                  "https://api.github.com/repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER/comments" \
+                  -d "{
+                    \"body\": \"$BODY\",
+                    \"commit_id\": \"$COMMIT_ID\",
+                    \"path\": \"$DISPLAY_PATH\",
+                    \"line\": $LINE
+                  }"
+                echo "------ DEBUGGING PR COMMENT PAYLOAD ------"
+                echo "API URL: https://api.github.com/repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER/comments"
+                echo "BODY: $BODY"
+                echo "COMMIT_ID: $COMMIT_ID"
+                echo "PATH: $DISPLAY_PATH"
+                echo "LINE: $LINE"
+                echo "-----------------------------------------"
+              else
+                echo "Skipping comment due to missing data: Path=$PATH_TO_FILE, Line=$LINE, Body=$BODY"
+              fi
+            done
+          else
+            echo "No failed Checkov checks found or report file is missing."
+          fi
+          echo "------ DEBUGGING PR COMMENT PAYLOAD ------"
+          echo "API URL: https://api.github.com/repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/comments"
+          echo "BODY: $BODY"
+          echo "COMMIT_ID: $COMMIT_ID"
+          echo "PATH: $DISPLAY_PATH"
+          echo "LINE: $LINE"
+          echo "-----------------------------------------"
+
+      - name: Post PR comments for Bandit failures
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          COMMIT_ID: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if [ -f bandit-report.json ] && jq -e '.results | length > 0' bandit-report.json > /dev/null; then
+            jq -c '.results[]' bandit-report.json | while read -r issue; do
+              PATH_TO_FILE=$(echo "$issue" | jq -r '.filename')
+              LINE=$(echo "$issue" | jq -r '.line_number')
+              ISSUE_TEXT=$(echo "$issue" | jq -r '.issue_text')
+              SEVERITY=$(echo "$issue" | jq -r '.issue_severity')
+              CONFIDENCE=$(echo "$issue" | jq -r '.issue_confidence')
+              BODY="Bandit: $ISSUE_TEXT (Severity: $SEVERITY, Confidence: $CONFIDENCE)"
+              if [[ -n "$PATH_TO_FILE" && -n "$LINE" && -n "$BODY" ]]; then
+                DISPLAY_PATH="${PATH_TO_FILE#./}" # remove leading ./ if present
+                echo "Posting Bandit comment for: $BODY at $DISPLAY_PATH:$LINE"
+                curl -L -X POST \
+                  -H "Accept: application/vnd.github+json" \
+                  -H "Authorization: Bearer $GITHUB_TOKEN" \
+                  -H "X-GitHub-Api-Version: 2022-11-28" \
+                  "https://api.github.com/repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER/comments" \
+                  -d "{
+                    \"body\": \"$BODY\",
+                    \"commit_id\": \"$COMMIT_ID\",
+                    \"path\": \"$DISPLAY_PATH\",
+                    \"line\": $LINE
+                  }"
+                echo "------ DEBUGGING BANDIT COMMENT PAYLOAD ------"
+                echo "PATH: $DISPLAY_PATH"
+                echo "LINE: $LINE"
+                echo "BODY: $BODY"
+                echo "----------------------------------------------"
+              else
+                echo "Skipping Bandit issue due to missing data: Path=$PATH_TO_FILE, Line=$LINE, Body=$BODY"
+              fi
+            done
+          else
+            echo "No Bandit issues found or bandit-report.json missing."
+          fi
+
+      - name: Format Reports
+        run: |
+            echo "# :shield: Security Scan Report" > report.md
+            echo "" >> report.md
+
+            CHECKOV_JSON="Terraform/checkov-report.json"
+
+            CHECKOV_PASSED=$(jq '.summary.passed' "$CHECKOV_JSON" 2>/dev/null || echo "0")
+            CHECKOV_FAILED=$(jq '.summary.failed' "$CHECKOV_JSON" 2>/dev/null || echo "0")
+            CHECKOV_SKIPPED=$(jq '.summary.skipped' "$CHECKOV_JSON" 2>/dev/null || echo "0")
+            BANDIT_FAILED=$(jq '.results | length' bandit-report.json 2>/dev/null || echo "0")
+
+            {
+                echo "1️⃣ **Checkov Report**"
+                echo "   - 🟢 **PASSED Checks:** $CHECKOV_PASSED"
+                echo "   - 🔴 **FAILED Checks:** $CHECKOV_FAILED"
+                echo "   - ⚠️  **SKIPPED Checks:** $CHECKOV_SKIPPED"
+                echo ""
+                echo "2️⃣ **Bandit Report**"
+                echo "   - 🔴 **FAILED Checks:** $BANDIT_FAILED"
+                echo ""
+                if [ "$CHECKOV_FAILED" -eq 0 ] && [ "$BANDIT_FAILED" -eq 0 ]; then
+                echo ":white_check_mark: Everything looks secure. Great job! 🔐"
+                else
+                echo "*⚡️ Every 🔴 is a risk bomb. Defuse before you MERGE!*"
+                fi
+                echo ""
+                echo "---"
+                echo ""
+            } >> report.md
+
+            export REPO_URL="https://github.com/${GITHUB_REPOSITORY}"
+            export BRANCH="${GITHUB_HEAD_REF:-$(git rev-parse --abbrev-ref HEAD)}"
+
+            echo "## :cloud: Checkov Detailed Report" >> report.md
+            echo "" >> report.md
+            if [ -f "$CHECKOV_JSON" ]; then
+                FAILED=$(jq '.results.failed_checks | length' "$CHECKOV_JSON" 2>/dev/null || echo "0")
+                if [ "$FAILED" -gt 0 ]; then
+                jq -r --arg repo_url "$REPO_URL" --arg branch "$BRANCH" '
+                    .results.failed_checks[]? |
+                    "- **" + (.check_id // "N/A") + ":** " + (.check_name // "N/A") + "\n" +
+                    (
+                        if (.file_path // "") != "" and
+                        ((.file_line_range | type) == "array" and (.file_line_range | length) > 0)
+                        then
+                        "  - **Location:** [`" + (.file_path | ltrimstr("/")) + ":" + ((.file_line_range[0]|tostring) // "?") + "`]" +
+                        "(" + $repo_url + "/blob/" + $branch + "/Terraform/" + ((.file_path | ltrimstr("/") | ltrimstr("Terraform/"))) + "#L" + ((.file_line_range[0]|tostring) // "") + ")\n"
+                        elif .resource_address then
+                        "  - **Resource:** `" + .resource_address + "`\n"
+                        else "" end
+                    ) +
+                    "  - **Severity:** " + ((.severity // "N/A")) + "\n" +
+                    "  - **Guideline:** " + ((.guideline // "N/A")) + "\n" +
+                    "  - **Description:** " + ((.description // .check_name // "No description provided.")) + "\n"
+                ' "$CHECKOV_JSON" >> report.md
+                else
+                echo ":white_check_mark: **No failed infrastructure checks found!**" >> report.md
+                fi
+            else
+                echo ":warning: Checkov report not generated." >> report.md
+            fi
+
+            echo "" >> report.md
+            echo "---" >> report.md
+            echo "" >> report.md
+
+            echo "## :snake: Bandit Detailed Report" >> report.md
+            echo "" >> report.md
+            if [ -f bandit-report.json ]; then
+                COUNT=$(jq '.results | length' bandit-report.json 2>/dev/null || echo "0")
+                if [ "$COUNT" -gt 0 ]; then
+                jq -r --arg repo_url "$REPO_URL" --arg branch "$BRANCH" '
+                    .results[] |
+                    "### Issue: " + (.issue_text // "N/A") + "\n" +
+                    "- **Location:** [`" + (.filename // "unknown") + ":" + ((.line_number | tostring) // "?") + "`]" +
+                    "(" + $repo_url + "/blob/" + $branch + "/" + (.filename | ltrimstr("/")) + "#L" + (.line_number|tostring) + ")\n" +
+                    "- **Severity:** " + (.issue_severity // "N/A") + "\n" +
+                    "- **Confidence:** " + (.issue_confidence // "N/A") + "\n" +
+                    "- **CWE:** [" + ((.issue_cwe.id | tostring) // "N/A") + "](" + (.issue_cwe.link // "#") + ")\n" +
+                    "---\n"
+                ' bandit-report.json >> report.md
+                else
+                echo ":white_check_mark: **No Bandit issues found!**" >> report.md
+                fi
+            else
+                echo ":warning: Bandit report not generated." >> report.md
+            fi
+
+            echo "" >> report.md
+            echo "---" >> report.md
+            echo "*This report was generated automatically by the Security Scan Pipeline*" >> report.md
+
+      - name: Upload Reports to S3
+        env:
+            AWS_REGION: ap-south-1
+            REPO_NAME: ${{ github.repository }}
+            BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
+            COMMIT_ID: ${{ github.event.pull_request.head.sha }}
+        run: |
+            # Define S3 bucket (replace with your bucket name)
+            S3_BUCKET="github-pullrequest-reports"
+            
+            # Construct prefix: repo-branch/
+            PREFIX="${REPO_NAME}/${BRANCH_NAME}"
+            
+            echo "Uploading reports to s3://${S3_BUCKET}/${PREFIX}/"
+            
+            # Upload each report file
+            aws s3 cp bandit-report.json s3://${S3_BUCKET}/${PREFIX}/bandit-report.json
+            aws s3 cp Terraform/checkov-report.json s3://${S3_BUCKET}/${PREFIX}/checkov-report.json
+            aws s3 cp report.md s3://${S3_BUCKET}/${PREFIX}/report.md
+
+      - name: Display S3 Report Location
+        env:
+            AWS_REGION: ap-south-1
+            REPO_NAME: ${{ github.repository }}
+            BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
+            COMMIT_ID: ${{ github.event.pull_request.head.sha }}
+        run: |
+            S3_BUCKET="github-pullrequest-reports"
+            PREFIX="${REPO_NAME}/${BRANCH_NAME}"
+            
+            echo "## 📁 S3 Report Location" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Repository:** \`${REPO_NAME}\`" >> $GITHUB_STEP_SUMMARY
+            echo "**Branch:** \`${BRANCH_NAME}\`" >> $GITHUB_STEP_SUMMARY
+            echo "**Commit:** \`${COMMIT_ID}\`" >> $GITHUB_STEP_SUMMARY
+            echo "**S3 Path:** \`s3://${S3_BUCKET}/${PREFIX}/\`" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Available Reports:**" >> $GITHUB_STEP_SUMMARY
+            echo "- **Bandit:** [Open in AWS Console](https://console.aws.amazon.com/s3/object/${S3_BUCKET}/${PREFIX}/bandit-report.json) | [Download (1h)](https://${S3_BUCKET}.s3.${AWS_REGION}.amazonaws.com/${PREFIX}/bandit-report.json)" >> $GITHUB_STEP_SUMMARY
+            echo "- **Checkov:** [Open in AWS Console](https://console.aws.amazon.com/s3/object/${S3_BUCKET}/${PREFIX}/checkov-report.json) | [Download (1h)](https://${S3_BUCKET}.s3.${AWS_REGION}.amazonaws.com/${PREFIX}/checkov-report.json)" >> $GITHUB_STEP_SUMMARY
+            echo "- **Markdown Summary:** [Open in AWS Console](https://console.aws.amazon.com/s3/object/${S3_BUCKET}/${PREFIX}/report.md) | [Download (1h)](https://${S3_BUCKET}.s3.${AWS_REGION}.amazonaws.com/${PREFIX}/report.md)" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "*Reports uploaded successfully*" >> $GITHUB_STEP_SUMMARY
+
+      - name: Post Security Scan Summary to PR
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+            path: report.md

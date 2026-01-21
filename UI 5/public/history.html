@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WonderLend - History</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 900px;
+            width: 100%;
+            margin: 0 auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            color: #333;
+            font-size: 2.5em;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .nav-btn {
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .nav-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .history-list {
+            margin-top: 20px;
+        }
+
+        .history-item {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border: 1px solid #e9ecef;
+        }
+
+        .history-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            position: relative;
+        }
+
+        .upload-csv-btn {
+            padding: 8px 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9em;
+            transition: all 0.3s ease;
+            position: absolute;
+            top: 0;
+            right: 0;
+        }
+
+        .upload-csv-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .upload-csv-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .csv-upload-input {
+            display: none;
+        }
+
+        .download-json-btn {
+            padding: 6px 12px;
+            background: #f093fb;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85em;
+            transition: all 0.2s ease;
+        }
+
+        .download-json-btn:hover {
+            opacity: 0.8;
+            transform: translateY(-1px);
+        }
+
+        .input-name {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .input-id {
+            font-size: 0.9em;
+            color: #666;
+            font-family: monospace;
+        }
+
+        .file-options {
+            display: flex;
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .dropdown {
+            position: relative;
+            flex: 1;
+        }
+
+        .dropdown-btn {
+            width: 100%;
+            padding: 12px 20px;
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1em;
+            transition: all 0.3s ease;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .dropdown-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4);
+        }
+
+        .dropdown-btn.json {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .dropdown-btn.json:hover {
+            box-shadow: 0 5px 15px rgba(245, 87, 108, 0.4);
+        }
+
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+            margin-top: 5px;
+            max-height: 300px;
+            overflow-y: auto;
+            z-index: 1000;
+        }
+
+        .dropdown-content.show {
+            display: block;
+        }
+
+        .dropdown-item {
+            padding: 12px 20px;
+            cursor: pointer;
+            border-bottom: 1px solid #e9ecef;
+            transition: background 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .dropdown-item:last-child {
+            border-bottom: none;
+        }
+
+        .dropdown-item:hover {
+            background: #f8f9fa;
+        }
+
+        .dropdown-item:active {
+            background: #e9ecef;
+        }
+
+        .file-icon {
+            font-size: 1.2em;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #666;
+        }
+
+        .empty-state-icon {
+            font-size: 4em;
+            margin-bottom: 20px;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .status-message {
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .status-message.show {
+            display: block;
+        }
+
+        .status-message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status-message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .credentials-warning {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            color: #856404;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>History</h1>
+            <div class="nav-buttons">
+                <a href="/" class="nav-btn">Home</a>
+            </div>
+        </div>
+
+        <div class="status-message" id="statusMessage"></div>
+
+        <div class="history-list" id="historyList">
+            <div class="empty-state">
+                <div class="empty-state-icon">📋</div>
+                <p>No upload history found.</p>
+                <p style="margin-top: 10px; font-size: 0.9em;">Upload files to see them here.</p>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        const historyList = document.getElementById('historyList');
+        const statusMessage = document.getElementById('statusMessage');
+    
+        // Load history from database
+        async function loadHistory() {
+            try {
+                // 1. Fetch history from your Backend API
+                const response = await fetch('/api/get-history');
+                const data = await response.json();
+
+                if (!data.success || !data.history || data.history.length === 0) {
+                    historyList.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📋</div>
+                            <p>No upload history found.</p>
+                            <p style="margin-top: 10px; font-size: 0.9em;">Upload files to see them here.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                const history = data.history;
+
+                // 2. Sort and Render (Same as before, but using DB data)
+                history.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+                historyList.innerHTML = history.map((item, index) => {
+                    const date = new Date(item.timestamp).toLocaleString();
+                    return `
+                        <div class="history-item" data-input-id="${item.inputId}">
+                            <div class="history-item-header">
+                                <div>
+                                    <div class="input-name">${item.inputName || `Input ${index + 1}`}</div>
+                                    <div class="input-id">ID: ${item.inputId}</div>
+                                    <div style="font-size: 0.85em; color: #999; margin-top: 5px;">Uploaded: ${date}</div>
+                                </div>
+                                <div style="display: flex; flex-direction: column; gap: 5px;">
+                                    <button class="upload-csv-btn" onclick="handleCsvUpload('${item.inputId}')">
+                                        📤 Upload CSV
+                                    </button>
+                                    <button class="download-json-btn" id="json-btn-${item.inputId}" onclick="downloadUploadedJson('${item.inputId}')" style="padding: 6px 12px; font-size: 0.85em; display: none;">
+                                        JSON
+                                    </button>
+                                </div>
+                                <input type="file" id="csv-upload-${item.inputId}" class="csv-upload-input" accept=".csv" onchange="uploadCsvFile('${item.inputId}', this.files[0])" />
+                            </div>
+                            <div class="file-options">
+                                <div class="dropdown">
+                                    <button class="dropdown-btn" onclick="toggleDropdown('csv-${item.inputId}')">
+                                        <span>📊 CSV Files</span>
+                                        <span>▼</span>
+                                    </button>
+                                    <div class="dropdown-content" id="csv-${item.inputId}">
+                                        <div class="dropdown-item" style="padding: 10px; text-align: center; color: #666;">
+                                            <span class="loading"></span> Loading...
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="dropdown">
+                                    <button class="dropdown-btn json" onclick="toggleDropdown('json-${item.inputId}')">
+                                        <span>📄 JSON Files</span>
+                                        <span>▼</span>
+                                    </button>
+                                    <div class="dropdown-content" id="json-${item.inputId}">
+                                        <div class="dropdown-item" style="padding: 10px; text-align: center; color: #666;">
+                                            <span class="loading"></span> Loading...
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+        
+                // Setup dropdowns
+                history.forEach(item => {
+                    setupDropdown(item.inputId);
+                });
+            } catch (error) {
+                console.error('Failed to load history from DB:', error);
+                historyList.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📋</div>
+                        <p>No upload history found.</p>
+                        <p style="margin-top: 10px; font-size: 0.9em;">Upload files to see them here.</p>
+                    </div>
+                `;
+            }
+        }
+    
+        // Setup dropdown functionality
+        function setupDropdown(inputId) {
+            // Handled in toggleDropdown
+        }
+    
+        // Toggle dropdown
+        window.toggleDropdown = async function(dropdownId) {
+            const dropdown = document.getElementById(dropdownId);
+            if (!dropdown) {
+                console.error('Dropdown not found:', dropdownId);
+                return;
+            }
+    
+            const isOpen = dropdown.classList.contains('show');
+            
+            // Close all dropdowns
+            document.querySelectorAll('.dropdown-content').forEach(d => {
+                d.classList.remove('show');
+            });
+    
+            // Open clicked dropdown if it wasn't open
+            if (!isOpen) {
+                dropdown.classList.add('show');
+                
+                // Extract inputId and extension from dropdownId
+                const parts = dropdownId.split('-');
+                if (parts.length < 2) {
+                    console.error('Invalid dropdown ID format:', dropdownId);
+                    return;
+                }
+                
+                const extension = parts[0];
+                const inputId = parts.slice(1).join('-');
+                
+                // Always reload fresh from backend
+                await loadFiles(inputId, extension, dropdown);
+            }
+        };
+    
+        // Load files by calling the Node.js Backend API
+        async function loadFiles(inputId, extension, dropdownElement) {
+            try {
+                dropdownElement.innerHTML = `
+                    <div class="dropdown-item" style="padding: 10px; text-align: center; color: #666;">
+                        <span class="loading"></span> Loading...
+                    </div>
+                `;
+
+                // We call your backend instead of S3 directly
+                const response = await fetch(`/api/list-files/${inputId}?ext=${extension}`);
+                const data = await response.json();
+
+                if (!data.success || !data.files || data.files.length === 0) {
+                    dropdownElement.innerHTML = `
+                        <div class="dropdown-item" style="padding: 10px; text-align: center; color: #999;">
+                            No ${extension.toUpperCase()} files found
+                        </div>
+                    `;
+                    return;
+                }
+
+                // Filter files to match the extension and exclude system files (output.json)
+                const filteredFiles = data.files.filter(file => {
+                    const nameLower = file.name.toLowerCase();
+                    const isCorrectExtension = nameLower.endsWith(`.${extension.toLowerCase()}`);
+                    const isSystemFile = nameLower === 'output.json';
+                    
+                    return isCorrectExtension && !isSystemFile;
+                });
+
+                if (filteredFiles.length === 0) {
+                    dropdownElement.innerHTML = `
+                        <div class="dropdown-item" style="padding: 10px; text-align: center; color: #999;">
+                            No ${extension.toUpperCase()} files found
+                        </div>
+                    `;
+                    return;
+                }
+
+                dropdownElement.innerHTML = filteredFiles.map(file => {
+                    const escapedInputId = inputId.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                    const escapedFileKey = file.key.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                    const escapedFileName = file.name.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                    const escapedDisplayName = file.displayName.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                    return `
+                        <div class="dropdown-item" onclick="window.downloadFile('${escapedInputId}', '${escapedFileKey}', '${escapedFileName}')">
+                            <span class="file-icon">${extension === 'csv' ? '📊' : '📄'}</span>
+                            <span>${escapedDisplayName}</span>
+                        </div>
+                    `;
+                }).join('');
+            } catch (error) {
+                console.error('Error loading files:', error);
+                dropdownElement.innerHTML = `<div class="dropdown-item" style="color: #dc3545;">Failed to load files</div>`;
+            }
+        }
+    
+        // Download file through the Node.js Backend
+        window.downloadFile = async function(inputId, fileKey, fileName) {
+            try {
+                showMessage(`Downloading ${fileName}...`, 'success');
+                
+                // Call your backend download route
+                const response = await fetch(`/api/download/${inputId}/${fileName}`);
+                
+                if (!response.ok) throw new Error('Download failed');
+
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = fileName;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+
+                showMessage(`Downloaded ${fileName} successfully!`, 'success');
+                
+                // Close dropdown
+                document.querySelectorAll('.dropdown-content').forEach(d => {
+                    d.classList.remove('show');
+                });
+            } catch (error) {
+                console.error('Download error:', error);
+                showMessage(`Error: ${error.message}`, 'error');
+            }
+        };
+    
+        // Handle CSV upload button click
+        window.handleCsvUpload = function(inputId) {
+            const fileInput = document.getElementById(`csv-upload-${inputId}`);
+            if (fileInput) {
+                fileInput.click();
+            }
+        };
+    
+        // Upload CSV file
+        window.uploadCsvFile = async function(inputId, file) {
+            if (!file) return;
+    
+            if (!file.name.endsWith('.csv')) {
+                showMessage('Please select a CSV file', 'error');
+                return;
+            }
+    
+            const jsonBtn = document.getElementById(`json-btn-${inputId}`);
+            if (jsonBtn) {
+                jsonBtn.style.display = 'none';
+                jsonBtn.dataset.jsonKey = '';
+            }
+    
+            try {
+                showMessage(`Uploading ${file.name}...`, 'success');
+                
+                const formData = new FormData();
+                formData.append('csv', file);
+                formData.append('inputId', `${inputId}.json`);
+    
+                const response = await fetch('/api/upload-csv', {
+                    method: 'POST',
+                    body: formData,
+                });
+    
+                const data = await response.json();
+    
+                if (data.success) {
+                    showMessage(`Successfully uploaded ${data.data.csvFileName} and ${data.data.jsonFileName}!`, 'success');
+                    
+                    if (jsonBtn && data.data.jsonKey) {
+                        jsonBtn.dataset.jsonKey = data.data.jsonKey;
+                        jsonBtn.style.display = 'block';
+                    }
+                } else {
+                    showMessage(`Error: ${data.error || data.message}`, 'error');
+                }
+            } catch (error) {
+                console.error('Upload error:', error);
+                showMessage(`Error uploading file: ${error.message}`, 'error');
+            }
+        };
+    
+        // Download the uploaded JSON file through the Node.js Backend
+        window.downloadUploadedJson = async function(inputId) {
+            const jsonBtn = document.getElementById(`json-btn-${inputId}`);
+            if (!jsonBtn) {
+                showMessage('JSON button not found', 'error');
+                return;
+            }
+    
+            const jsonKey = jsonBtn.dataset.jsonKey;
+            if (!jsonKey) {
+                showMessage('JSON file key not found', 'error');
+                return;
+            }
+    
+            try {
+                const fileName = jsonKey.split('/').pop();
+                showMessage(`Downloading ${fileName}...`, 'success');
+                
+                // Call your backend download route
+                const response = await fetch(`/api/download/${inputId}/${fileName}`);
+                
+                if (!response.ok) throw new Error('Download failed');
+
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = fileName;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+    
+                showMessage(`Downloaded ${fileName} successfully!`, 'success');
+            } catch (error) {
+                console.error('Download error:', error);
+                showMessage(`Error downloading JSON: ${error.message}`, 'error');
+            }
+        };
+    
+        // Show status message
+        function showMessage(message, type) {
+            statusMessage.textContent = message;
+            statusMessage.className = `status-message ${type} show`;
+            setTimeout(() => {
+                statusMessage.classList.remove('show');
+            }, 3000);
+        }
+    
+        // Close dropdowns when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.dropdown')) {
+                document.querySelectorAll('.dropdown-content').forEach(d => {
+                    d.classList.remove('show');
+                });
+            }
+        });
+    
+        // Only load history. Credentials are handled by the server now.
+        loadHistory();
+    </script>
+</body>
+</html>

@@ -1,0 +1,1092 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WonderLend - PDF Upload & Download</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 40px 20px; /* 40px top/bottom, 20px sides */
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 60px;          /* Increased padding for a more spacious feel */
+            max-width: 1200px;      /* Significantly wider */
+            width: 95%;             /* Allows it to grow nearly to screen edges */
+            min-height: 80vh;       /* Occupies 80% of the screen height */
+            display: flex;
+            flex-direction: column; /* Keeps content stacked vertically */
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 3.5em;
+            text-align: center;
+        }
+
+        .subtitle {
+            color: #666;
+            text-align: center;
+            margin-bottom: 40px;
+            font-size: 1.1em;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .repository-selector {
+            margin-bottom: 30px;
+        }
+
+        .select-repo-btn {
+            width: 100%;
+            padding: 20px 40px;
+            font-size: 1.2em;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+            position: relative;
+        }
+
+        .select-repo-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(17, 153, 142, 0.4);
+        }
+
+        .select-repo-btn::after {
+            content: '▼';
+            position: absolute;
+            right: 40px;
+            transition: transform 0.3s ease;
+        }
+
+        .select-repo-btn.open::after {
+            transform: rotate(180deg);
+        }
+
+        .repositories-dropdown {
+            display: none;
+            background: white;
+            border-radius: 10px;
+            margin-top: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            max-height: 300px;
+            overflow-y: auto;
+            border: 2px solid #e9ecef;
+        }
+
+        .repositories-dropdown.show {
+            display: block;
+        }
+
+        .repository-item {
+            padding: 15px 20px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .repository-item:last-child {
+            border-bottom: none;
+        }
+
+        .repository-item:hover {
+            background: #f8f9fa;
+        }
+
+        .repository-item.selected {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+        }
+
+        .selected-repo-info {
+            margin-top: 15px;
+            padding: 15px;
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            border-radius: 8px;
+            color: #155724;
+            display: none;
+        }
+
+        .selected-repo-info.show {
+            display: block;
+        }
+
+        button {
+            flex: 1;
+            padding: 20px 40px;
+            font-size: 1.2em;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .upload-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .upload-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .download-btn {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+
+        .download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(245, 87, 108, 0.4);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .file-input-wrapper {
+            margin-bottom: 30px;
+        }
+
+        .file-input-label {
+            display: block;
+            padding: 60px 20px;
+            border: 3px dashed #667eea;
+            border-radius: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #f8f9ff;
+            font-size: 1.2em;
+        }
+
+        .file-input-label:hover {
+            background: #f0f2ff;
+            border-color: #764ba2;
+        }
+
+        .file-input-label.has-file {
+            border-color: #4caf50;
+            background: #f1f8f4;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .file-name {
+            margin-top: 10px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .status-message {
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: none;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .status-message.show {
+            display: block;
+        }
+
+        .status-message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status-message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status-message.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .polling-status.error {
+            background: #f8d7da;
+            border-color: #dc3545;
+            color: #721c24;
+        }
+
+        .upload-info {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .upload-info.show {
+            display: block;
+        }
+
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .info-item:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            font-weight: 600;
+            color: #666;
+        }
+
+        .info-value {
+            color: #333;
+            word-break: break-all;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .polling-status {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            color: #856404;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .polling-status.show {
+            display: block;
+        }
+
+        .polling-status.processing {
+            background: #d1ecf1;
+            border-color: #0c5460;
+            color: #0c5460;
+        }
+
+        .polling-status.ready {
+            background: #d4edda;
+            border-color: #28a745;
+            color: #155724;
+        }
+
+        /* Hide file status details (S3 checking) but keep DynamoDB status visible */
+        .file-status {
+            display: none;
+        }
+
+        .download-section {
+            margin-top: 20px;
+            display: none;
+        }
+
+        .download-section.show {
+            display: block;
+        }
+
+        .download-buttons {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .download-btn-file {
+            flex: 1;
+            min-width: 200px;
+            padding: 12px 20px;
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .download-btn-file:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4);
+        }
+
+        .download-btn-file:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .file-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 10px;
+            font-size: 0.9em;
+        }
+
+        .status-icon {
+            font-size: 1.2em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <div>
+                <h1>WonderLend</h1>
+                <p class="subtitle">Upload and Download PDF Files</p>
+            </div>
+            <a href="/history.html" style="padding: 10px 20px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; text-decoration: none; transition: all 0.3s ease; margin-left: 10px;">History</a>
+            <a href="/variable-repository.html" style="padding: 10px 20px; background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; text-decoration: none; transition: all 0.3s ease; margin-left: 10px;">Variable Repository</a>
+        </div>
+
+        <!-- Variable Repository Selector -->
+        <div class="repository-selector">
+            <button class="select-repo-btn" id="selectRepoBtn" onclick="toggleRepositories()">
+                Select Variable Repository
+            </button>
+            <div class="repositories-dropdown" id="repositoriesDropdown">
+                <div style="text-align: center; padding: 20px; color: #666;">
+                    <span class="loading"></span> Loading repositories...
+                </div>
+            </div>
+            <div class="selected-repo-info" id="selectedRepoInfo">
+                <strong>Selected:</strong> <span id="selectedRepoName"></span>
+            </div>
+        </div>
+
+        <div class="button-group" id="uploadButtonGroup" style="display: none;">
+            <button class="upload-btn" id="uploadBtn">Upload</button>
+            <button class="download-btn" id="downloadBtn" style="display: none;">Download</button>
+        </div>
+
+        <div class="file-input-wrapper" id="fileInputWrapper" style="display: none;">
+            <label for="fileInput" class="file-input-label" id="fileLabel">
+                <div>📄 Click to select PDF file</div>
+                <div class="file-name" id="fileName"></div>
+            </label>
+            <input type="file" id="fileInput" accept=".pdf" />
+        </div>
+
+        <div class="status-message" id="statusMessage"></div>
+
+        <div class="upload-info" id="uploadInfo">
+            <div class="info-item">
+                <span class="info-label">Input ID:</span>
+                <span class="info-value" id="inputIdValue"></span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Date:</span>
+                <span class="info-value" id="dateValue"></span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Time:</span>
+                <span class="info-value" id="timeValue"></span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">S3 Key:</span>
+                <span class="info-value" id="s3KeyValue"></span>
+            </div>
+        </div>
+
+        <div class="polling-status" id="pollingStatus">
+            <div id="pollingMessage">Waiting for output files...</div>
+            <div class="file-status" id="fileStatus" style="display: none;"></div>
+        </div>
+
+        <div class="download-section" id="downloadSection">
+            <h3 style="margin-bottom: 15px; color: #333;">Download Output Files</h3>
+            <div class="download-buttons">
+                <button class="download-btn-file" id="downloadDvCsvBtn">
+                    <span>📥</span>
+                    <span>Download output_dv.csv</span>
+                </button>
+                <button class="download-btn-file" id="downloadDvJsonBtn">
+                    <span>📥</span>
+                    <span>Download output_dv.json</span>
+                </button>
+                <button class="download-btn-file" id="downloadSlabCsvBtn">
+                    <span>📥</span>
+                    <span>Download output_slab.csv</span>
+                </button>
+                <button class="download-btn-file" id="downloadSlabJsonBtn">
+                    <span>📥</span>
+                    <span>Download output_slab.json</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const uploadBtn = document.getElementById('uploadBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const fileInputWrapper = document.getElementById('fileInputWrapper');
+        const fileInput = document.getElementById('fileInput');
+        const fileLabel = document.getElementById('fileLabel');
+        const fileName = document.getElementById('fileName');
+        const statusMessage = document.getElementById('statusMessage');
+        const uploadInfo = document.getElementById('uploadInfo');
+        const pollingStatus = document.getElementById('pollingStatus');
+        const pollingMessage = document.getElementById('pollingMessage');
+        const fileStatus = document.getElementById('fileStatus');
+        const downloadSection = document.getElementById('downloadSection');
+        const downloadDvCsvBtn = document.getElementById('downloadDvCsvBtn');
+        const downloadDvJsonBtn = document.getElementById('downloadDvJsonBtn');
+        const downloadSlabCsvBtn = document.getElementById('downloadSlabCsvBtn');
+        const downloadSlabJsonBtn = document.getElementById('downloadSlabJsonBtn');
+
+        let selectedFile = null;
+        let currentInputId = null;
+        let jobStatusPollingInterval = null;
+        let s3FilePollingInterval = null;
+        let selectedRepository = null; // Store selected repository with repository_id and client_id
+        let repositoriesLoaded = false;
+        let repositoryIdsMap = new Map(); // Cache for repository_id and client_id by variable_repository name
+        const JOB_STATUS_POLLING_INTERVAL = 5000; // 5 seconds for DynamoDB
+        const S3_FILE_POLLING_INTERVAL = 3000; // 3 seconds for S3 files (faster after completion)
+
+        // Status mapping: Backend status -> User-friendly message
+        const STATUS_MAPPING = {
+            'UPLOADED': '📥 File successfully received.',
+            'ORCHESTRATING': '⚙️ Initializing processing pipeline...',
+            'RUNNABLE': '⏳ Waiting for available compute resources.',
+            'STARTING': '🚀 Booting up the processing engine.',
+            'RUNNING': '🧠 Analyzing your document (this may take a minute).',
+            'SUCCEEDED': '✅ Processing complete! Preparing downloads.',
+            'COMPLETED': '✅ Processing complete! Preparing downloads.',
+            'FAILED': '❌ Error: Processing could not be completed.',
+        };
+
+        // Get user-friendly status message
+        function getFriendlyStatus(status) {
+            if (!status) return '⏳ Verifying upload...';
+            
+            // Check for exact match first
+            if (STATUS_MAPPING[status]) {
+                return STATUS_MAPPING[status];
+            }
+            
+            // Check for partial matches (e.g., "Completed! Your files are ready.")
+            if (status.includes('Completed') || status.includes('ready')) {
+                return '✅ Processing complete! Preparing downloads.';
+            }
+            
+            // Default: show the status as-is
+            return `📊 ${status}`;
+        }
+
+        // Upload button click handler
+        uploadBtn.addEventListener('click', () => {
+            fileInputWrapper.style.display = 'block';
+            fileInput.click();
+        });
+
+        // File input change handler
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                if (file.type !== 'application/pdf') {
+                    showMessage('Please select a PDF file', 'error');
+                    return;
+                }
+                selectedFile = file;
+                fileName.textContent = `Selected: ${file.name}`;
+                fileLabel.classList.add('has-file');
+                uploadFile(file);
+            }
+        });
+
+        // Upload file function
+        async function uploadFile(file) {
+            // Check if repository is selected
+            if (!selectedRepository) {
+                showMessage('Please select a variable repository first', 'error');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('pdf', file);
+            formData.append('repository_id', selectedRepository.repository_id);
+            formData.append('client_id', selectedRepository.client_id);
+
+            showMessage('Uploading document to secure storage...', 'info');
+            uploadBtn.disabled = true;
+            uploadBtn.innerHTML = '<span class="loading"></span>Uploading...';
+
+            // Reset previous state
+            stopAllPolling();
+            downloadSection.classList.remove('show');
+            downloadBtn.style.display = 'none'; // Hide Download button initially
+            pollingStatus.classList.remove('show', 'ready', 'processing', 'error');
+            downloadDvCsvBtn.disabled = true;
+            downloadDvJsonBtn.disabled = true;
+            downloadSlabCsvBtn.disabled = true;
+            downloadSlabJsonBtn.disabled = true;
+
+            try {
+                const response = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showMessage('File uploaded successfully! Processing started...', 'success');
+                    displayUploadInfo(data.data);
+                    currentInputId = data.data.inputId;
+                    
+                    // Save to history
+                    saveToHistory(currentInputId, file.name);
+                    
+                    // Show initial status (DynamoDB status only)
+                    pollingStatus.classList.add('show', 'processing');
+                    pollingMessage.textContent = '⏳ Verifying upload...';
+                    fileStatus.style.display = 'none';
+                    
+                    // Start polling DynamoDB for job status AND S3 for output files in parallel
+                    startJobStatusPolling(currentInputId);
+                    startS3FilePolling(currentInputId); // Start S3 polling immediately in parallel (silently)
+                } else {
+                    showMessage(`Error: ${data.message || 'Upload failed'}`, 'error');
+                }
+            } catch (error) {
+                showMessage(`Error: ${error.message}`, 'error');
+            } finally {
+                uploadBtn.disabled = false;
+                uploadBtn.innerHTML = 'Upload';
+                fileInput.value = '';
+                selectedFile = null;
+                fileName.textContent = '';
+                fileLabel.classList.remove('has-file');
+            }
+        }
+
+        // Start polling DynamoDB for job status
+        function startJobStatusPolling(inputId) {
+            // Check job status immediately
+            checkJobStatus(inputId);
+
+            // Then check periodically
+            jobStatusPollingInterval = setInterval(() => {
+                checkJobStatus(inputId);
+            }, JOB_STATUS_POLLING_INTERVAL);
+        }
+
+        // Check job status from DynamoDB
+        async function checkJobStatus(inputId) {
+            try {
+                const response = await fetch(`/api/job-status/${inputId}`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+
+                if (!data.success) {
+                    console.error('Job status API returned error:', data.error || data.message);
+                    pollingStatus.classList.add('show', 'processing');
+                    pollingMessage.textContent = '⚠️ Error checking job status. Retrying...';
+                    fileStatus.style.display = 'none';
+                    return;
+                }
+
+                if (!data.data) {
+                    console.error('Job status API returned invalid data structure:', data);
+                    pollingStatus.classList.add('show', 'processing');
+                    pollingMessage.textContent = '⚠️ Error checking job status. Retrying...';
+                    fileStatus.style.display = 'none';
+                    return;
+                }
+
+                const { exists, status, lastUpdated, isFinished } = data.data;
+
+                if (!exists) {
+                    // Gap between S3 upload and DDB write - show verifying message
+                    pollingStatus.classList.add('show', 'processing');
+                    pollingMessage.textContent = '⏳ Verifying upload...';
+                    fileStatus.style.display = 'none';
+                    return;
+                }
+
+                // Get user-friendly status message
+                const friendlyStatus = getFriendlyStatus(status);
+                
+                // Update status display with friendly message (DynamoDB status - keep visible)
+                pollingStatus.classList.add('show', 'processing');
+                pollingMessage.textContent = friendlyStatus;
+                
+                // Hide file status (S3 checking happens in background)
+                fileStatus.style.display = 'none';
+
+                // Log status for debugging
+                console.log(`Job status for ${inputId}:`, { status, lastUpdated, isFinished });
+
+                // Check if job is finished
+                if (isFinished) {
+                    // Stop DynamoDB polling (S3 polling continues independently)
+                    stopJobStatusPolling();
+
+                    if (status === 'FAILED') {
+                        // Job failed - stop all polling
+                        stopAllPolling();
+                        pollingStatus.classList.remove('processing');
+                        pollingStatus.classList.add('error');
+                        pollingMessage.textContent = '❌ Error: Processing could not be completed.';
+                        fileStatus.innerHTML = '<div><span class="status-icon">❌</span> Please contact support for assistance</div>';
+                        showMessage('Job processing failed. Please contact support.', 'error');
+                    } else if (status === 'SUCCEEDED' || status === 'COMPLETED' || status.includes('Completed') || status.includes('ready')) {
+                        // Job succeeded - S3 polling already running in parallel
+                        pollingMessage.textContent = '✅ Processing complete!';
+                        fileStatus.style.display = 'none';
+                        // S3 polling continues independently in background
+                    }
+                }
+            } catch (error) {
+                console.error('Error checking job status:', error);
+                pollingStatus.classList.add('show', 'processing');
+                pollingMessage.textContent = '⚠️ Error checking job status. Retrying...';
+                fileStatus.style.display = 'none';
+            }
+        }
+
+        // Start polling S3 for output files (runs in parallel with DynamoDB polling)
+        function startS3FilePolling(inputId) {
+            // Stop any existing S3 polling first
+            stopS3FilePolling();
+            
+            // Check immediately
+            checkOutputFiles(inputId);
+
+            // Then check periodically - this runs continuously until files are found
+            s3FilePollingInterval = setInterval(() => {
+                checkOutputFiles(inputId);
+            }, S3_FILE_POLLING_INTERVAL);
+        }
+
+        // Stop job status polling
+        function stopJobStatusPolling() {
+            if (jobStatusPollingInterval) {
+                clearInterval(jobStatusPollingInterval);
+                jobStatusPollingInterval = null;
+            }
+        }
+
+        // Stop S3 file polling
+        function stopS3FilePolling() {
+            if (s3FilePollingInterval) {
+                clearInterval(s3FilePollingInterval);
+                s3FilePollingInterval = null;
+            }
+        }
+
+        // Stop all polling
+        function stopAllPolling() {
+            stopJobStatusPolling();
+            stopS3FilePolling();
+        }
+
+        // Check if output files exist in S3
+        async function checkOutputFiles(inputId) {
+            try {
+                const response = await fetch(`/api/check-output/${inputId}`);
+                const data = await response.json();
+
+                if (data.success) {
+                    const { outputDv, outputSlab, allReady } = data.data;
+
+                    // File checking happens in background - don't display status
+                    // Keep fileStatus hidden but update it for internal tracking
+                    fileStatus.style.display = 'none';
+
+                    if (allReady) {
+                        // All files are ready! Stop all polling
+                        stopAllPolling();
+                        pollingStatus.classList.remove('processing');
+                        pollingStatus.classList.add('ready');
+                        pollingMessage.textContent = '✅ All output files are ready!';
+                        fileStatus.style.display = 'none';
+                        
+                        // Show download section and Download button
+                        downloadSection.classList.add('show');
+                        downloadBtn.style.display = 'flex';
+                        downloadDvCsvBtn.disabled = false;
+                        downloadDvJsonBtn.disabled = false;
+                        downloadSlabCsvBtn.disabled = false;
+                        downloadSlabJsonBtn.disabled = false;
+                        
+                        showMessage('Files are ready for download!', 'success');
+                    }
+                    // Continue polling silently in background if not all ready
+                    // Don't update UI with file checking details
+                } else {
+                    // API call failed but keep polling silently
+                    fileStatus.style.display = 'none';
+                }
+            } catch (error) {
+                console.error('Error checking output files:', error);
+                // Keep polling even on error (silently)
+                fileStatus.style.display = 'none';
+            }
+        }
+
+        // Download file function
+        async function downloadFile(inputId, fileName) {
+            try {
+                const response = await fetch(`/api/download/${inputId}/${fileName}`);
+                
+                if (!response.ok) {
+                    throw new Error('Failed to download file');
+                }
+
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = fileName;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+
+                showMessage(`Downloaded ${fileName} successfully!`, 'success');
+            } catch (error) {
+                showMessage(`Error downloading ${fileName}: ${error.message}`, 'error');
+            }
+        }
+
+        // Download button handlers
+        downloadDvCsvBtn.addEventListener('click', () => {
+            if (currentInputId) {
+                downloadDvCsvBtn.disabled = true;
+                downloadDvCsvBtn.innerHTML = '<span class="loading"></span>Downloading...';
+                downloadFile(currentInputId, 'output_dv.csv').finally(() => {
+                    downloadDvCsvBtn.disabled = false;
+                    downloadDvCsvBtn.innerHTML = '<span>📥</span><span>Download output_dv.csv</span>';
+                });
+            }
+        });
+
+        downloadDvJsonBtn.addEventListener('click', () => {
+            if (currentInputId) {
+                downloadDvJsonBtn.disabled = true;
+                downloadDvJsonBtn.innerHTML = '<span class="loading"></span>Downloading...';
+                downloadFile(currentInputId, 'output_dv.json').finally(() => {
+                    downloadDvJsonBtn.disabled = false;
+                    downloadDvJsonBtn.innerHTML = '<span>📥</span><span>Download output_dv.json</span>';
+                });
+            }
+        });
+
+        downloadSlabCsvBtn.addEventListener('click', () => {
+            if (currentInputId) {
+                downloadSlabCsvBtn.disabled = true;
+                downloadSlabCsvBtn.innerHTML = '<span class="loading"></span>Downloading...';
+                downloadFile(currentInputId, 'output_slab.csv').finally(() => {
+                    downloadSlabCsvBtn.disabled = false;
+                    downloadSlabCsvBtn.innerHTML = '<span>📥</span><span>Download output_slab.csv</span>';
+                });
+            }
+        });
+
+        downloadSlabJsonBtn.addEventListener('click', () => {
+            if (currentInputId) {
+                downloadSlabJsonBtn.disabled = true;
+                downloadSlabJsonBtn.innerHTML = '<span class="loading"></span>Downloading...';
+                downloadFile(currentInputId, 'output_slab.json').finally(() => {
+                    downloadSlabJsonBtn.disabled = false;
+                    downloadSlabJsonBtn.innerHTML = '<span>📥</span><span>Download output_slab.json</span>';
+                });
+            }
+        });
+
+        // Download button click handler (legacy)
+        downloadBtn.addEventListener('click', () => {
+            if (currentInputId && downloadSection.classList.contains('show')) {
+                // Scroll to download section
+                downloadSection.scrollIntoView({ behavior: 'smooth' });
+            } else {
+                showMessage('Please upload a file first and wait for processing to complete', 'info');
+            }
+        });
+
+        // Show status message
+        function showMessage(message, type) {
+            statusMessage.textContent = message;
+            statusMessage.className = `status-message ${type} show`;
+            setTimeout(() => {
+                statusMessage.classList.remove('show');
+            }, 5000);
+        }
+
+        // Display upload information
+        function displayUploadInfo(data) {
+            document.getElementById('inputIdValue').textContent = data.inputId;
+            document.getElementById('dateValue').textContent = data.date;
+            document.getElementById('timeValue').textContent = data.time;
+            document.getElementById('s3KeyValue').textContent = data.s3Key;
+            uploadInfo.classList.add('show');
+        }
+
+        // Toggle repositories dropdown
+        async function toggleRepositories() {
+            const dropdown = document.getElementById('repositoriesDropdown');
+            const btn = document.getElementById('selectRepoBtn');
+
+            if (dropdown.classList.contains('show')) {
+                dropdown.classList.remove('show');
+                btn.classList.remove('open');
+            } else {
+                dropdown.classList.add('show');
+                btn.classList.add('open');
+
+                // Load repositories if not already loaded
+                if (!repositoriesLoaded) {
+                    await loadRepositories();
+                }
+            }
+        }
+
+        // Load repositories from API (fast - names only)
+        async function loadRepositories() {
+            const dropdown = document.getElementById('repositoriesDropdown');
+            
+            dropdown.innerHTML = '<div style="text-align: center; padding: 20px; color: #666;"><span class="loading"></span> Loading repositories...</div>';
+
+            try {
+                // First, quickly fetch just the names
+                const response = await fetch('/api/variable-repositories/names');
+                
+                if (!response.ok) {
+                    throw new Error('Failed to fetch repositories');
+                }
+
+                const data = await response.json();
+
+                if (data.success && data.data.repositories) {
+                    const repositoryNames = data.data.repositories;
+                    repositoriesLoaded = true;
+
+                    if (repositoryNames.length === 0) {
+                        dropdown.innerHTML = '<div style="text-align: center; padding: 20px; color: #666;">No repositories found.</div>';
+                    } else {
+                        // Display names immediately
+                        dropdown.innerHTML = repositoryNames.map(repoName => {
+                            const escapedRepo = repoName.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                            return `
+                                <div class="repository-item" onclick="selectRepositoryByName('${escapedRepo}')">
+                                    <div style="font-weight: 600;">${repoName}</div>
+                                </div>
+                            `;
+                        }).join('');
+
+                        // Now fetch IDs in the background for all repositories
+                        fetchRepositoryIdsInBackground(repositoryNames);
+                    }
+                } else {
+                    throw new Error('Invalid response format');
+                }
+            } catch (error) {
+                console.error('Error loading repositories:', error);
+                dropdown.innerHTML = `<div style="text-align: center; padding: 20px; color: #dc3545;">Error loading repositories: ${error.message}</div>`;
+            }
+        }
+
+        // Fetch repository IDs in the background
+        async function fetchRepositoryIdsInBackground(repositoryNames) {
+            // Fetch IDs for all repositories in parallel
+            const fetchPromises = repositoryNames.map(async (repoName) => {
+                try {
+                    const encodedRepoName = encodeURIComponent(repoName);
+                    const response = await fetch(`/api/variable-repositories/${encodedRepoName}/ids`);
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data.success && data.data) {
+                            // Cache the IDs
+                            repositoryIdsMap.set(repoName, {
+                                repository_id: data.data.repository_id,
+                                client_id: data.data.client_id,
+                            });
+                        }
+                    }
+                } catch (error) {
+                    console.error(`Error fetching IDs for ${repoName}:`, error);
+                    // Continue fetching others even if one fails
+                }
+            });
+
+            // Don't await - let it run in background
+            Promise.all(fetchPromises).then(() => {
+                console.log('Finished fetching repository IDs in background');
+            });
+        }
+
+        // Select repository by name (will fetch IDs if not cached)
+        async function selectRepositoryByName(variableRepo) {
+            // Check if IDs are already cached
+            let repositoryData = repositoryIdsMap.get(variableRepo);
+
+            if (!repositoryData) {
+                // IDs not cached yet - fetch them now
+                try {
+                    showMessage('Loading repository details...', 'info');
+                    const encodedRepoName = encodeURIComponent(variableRepo);
+                    const response = await fetch(`/api/variable-repositories/${encodedRepoName}/ids`);
+                    
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch repository IDs');
+                    }
+
+                    const data = await response.json();
+                    if (data.success && data.data) {
+                        repositoryData = {
+                            repository_id: data.data.repository_id,
+                            client_id: data.data.client_id,
+                        };
+                        // Cache it
+                        repositoryIdsMap.set(variableRepo, repositoryData);
+                    } else {
+                        throw new Error('Invalid response format');
+                    }
+                } catch (error) {
+                    console.error('Error fetching repository IDs:', error);
+                    showMessage(`Error loading repository: ${error.message}`, 'error');
+                    return;
+                }
+            }
+
+            // Now select with the IDs
+            selectRepository(variableRepo, repositoryData.repository_id, repositoryData.client_id);
+        }
+
+        // Select a repository
+        function selectRepository(variableRepo, repositoryId, clientId) {
+            selectedRepository = {
+                variable_repository: variableRepo,
+                repository_id: repositoryId,
+                client_id: clientId,
+            };
+
+            // Update UI
+            document.getElementById('selectedRepoName').textContent = variableRepo;
+            document.getElementById('selectedRepoInfo').classList.add('show');
+            
+            // Update button text
+            const btn = document.getElementById('selectRepoBtn');
+            btn.textContent = `Selected: ${variableRepo}`;
+            btn.style.background = 'linear-gradient(135deg, #28a745 0%, #20c997 100%)';
+            
+            // Close dropdown
+            document.getElementById('repositoriesDropdown').classList.remove('show');
+            btn.classList.remove('open');
+            
+            // Show upload section
+            document.getElementById('uploadButtonGroup').style.display = 'flex';
+            document.getElementById('fileInputWrapper').style.display = 'block';
+
+            showMessage(`Variable repository "${variableRepo}" selected`, 'success');
+        }
+
+        // Save upload to history
+        async function saveToHistory(inputId, fileName) {
+            try {
+                console.log('Sending history metadata to backend:', { inputId, fileName });
+                
+                // Call a new backend API endpoint
+                const response = await fetch('/api/save-history', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        inputId: inputId,
+                        inputName: fileName,
+                        timestamp: new Date().toISOString()
+                    })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    console.log('History saved to DynamoDB successfully');
+                }
+            } catch (error) {
+                console.error('Error saving history to database:', error);
+            }
+        }
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            stopAllPolling();
+        });
+    </script>
+</body>
+</html>
+

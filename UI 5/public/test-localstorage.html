@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test LocalStorage</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+        }
+        pre {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>LocalStorage Test</h1>
+    
+    <div class="test-section">
+        <h2>1. Check if LocalStorage is Available</h2>
+        <div id="availability"></div>
+        <button onclick="checkAvailability()">Check Availability</button>
+    </div>
+    
+    <div class="test-section">
+        <h2>2. Check Current Upload History</h2>
+        <div id="history-display"></div>
+        <button onclick="checkHistory()">Check History</button>
+    </div>
+    
+    <div class="test-section">
+        <h2>3. Test Write/Read</h2>
+        <button onclick="testWrite()">Write Test Data</button>
+        <button onclick="testRead()">Read Test Data</button>
+        <div id="test-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>4. All LocalStorage Keys</h2>
+        <div id="all-keys"></div>
+        <button onclick="showAllKeys()">Show All Keys</button>
+    </div>
+    
+    <div class="test-section">
+        <h2>5. Clear History</h2>
+        <button onclick="clearHistory()" style="background: #dc3545; color: white;">Clear Upload History</button>
+        <div id="clear-result"></div>
+    </div>
+
+    <script>
+        function checkAvailability() {
+            const div = document.getElementById('availability');
+            try {
+                if (typeof(Storage) !== "undefined") {
+                    div.innerHTML = '<p style="color: green;">✅ LocalStorage is available!</p>';
+                } else {
+                    div.innerHTML = '<p style="color: red;">❌ LocalStorage is NOT available</p>';
+                }
+            } catch (e) {
+                div.innerHTML = `<p style="color: red;">❌ Error: ${e.message}</p>`;
+            }
+        }
+        
+        function checkHistory() {
+            const div = document.getElementById('history-display');
+            try {
+                const historyStr = localStorage.getItem('uploadHistory');
+                if (!historyStr) {
+                    div.innerHTML = '<p style="color: orange;">⚠️ No history found in localStorage</p>';
+                    return;
+                }
+                
+                const history = JSON.parse(historyStr);
+                div.innerHTML = `
+                    <p><strong>History found:</strong></p>
+                    <pre>${JSON.stringify(history, null, 2)}</pre>
+                    <p><strong>Number of items:</strong> ${history.length}</p>
+                `;
+            } catch (e) {
+                div.innerHTML = `<p style="color: red;">❌ Error reading history: ${e.message}</p>`;
+            }
+        }
+        
+        function testWrite() {
+            const div = document.getElementById('test-result');
+            try {
+                const testData = {
+                    test: true,
+                    timestamp: new Date().toISOString(),
+                    message: 'This is a test'
+                };
+                localStorage.setItem('test_key', JSON.stringify(testData));
+                div.innerHTML = '<p style="color: green;">✅ Test data written successfully!</p>';
+            } catch (e) {
+                div.innerHTML = `<p style="color: red;">❌ Error writing: ${e.message}</p>`;
+            }
+        }
+        
+        function testRead() {
+            const div = document.getElementById('test-result');
+            try {
+                const testData = localStorage.getItem('test_key');
+                if (testData) {
+                    const parsed = JSON.parse(testData);
+                    div.innerHTML = `
+                        <p style="color: green;">✅ Test data read successfully:</p>
+                        <pre>${JSON.stringify(parsed, null, 2)}</pre>
+                    `;
+                } else {
+                    div.innerHTML = '<p style="color: orange;">⚠️ No test data found. Click "Write Test Data" first.</p>';
+                }
+            } catch (e) {
+                div.innerHTML = `<p style="color: red;">❌ Error reading: ${e.message}</p>`;
+            }
+        }
+        
+        function showAllKeys() {
+            const div = document.getElementById('all-keys');
+            try {
+                const keys = [];
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    const value = localStorage.getItem(key);
+                    keys.push({ key, value });
+                }
+                
+                if (keys.length === 0) {
+                    div.innerHTML = '<p>No keys found in localStorage</p>';
+                } else {
+                    div.innerHTML = `
+                        <p><strong>Found ${keys.length} key(s):</strong></p>
+                        <pre>${JSON.stringify(keys, null, 2)}</pre>
+                    `;
+                }
+            } catch (e) {
+                div.innerHTML = `<p style="color: red;">❌ Error: ${e.message}</p>`;
+            }
+        }
+        
+        function clearHistory() {
+            const div = document.getElementById('clear-result');
+            if (confirm('Are you sure you want to clear the upload history?')) {
+                try {
+                    localStorage.removeItem('uploadHistory');
+                    div.innerHTML = '<p style="color: green;">✅ Upload history cleared!</p>';
+                } catch (e) {
+                    div.innerHTML = `<p style="color: red;">❌ Error clearing: ${e.message}</p>`;
+                }
+            }
+        }
+        
+        // Auto-run on load
+        window.onload = function() {
+            checkAvailability();
+            checkHistory();
+            showAllKeys();
+        };
+    </script>
+</body>
+</html>
+

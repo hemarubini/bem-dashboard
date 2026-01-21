@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WonderLend - Variable Repository</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 900px;
+            width: 100%;
+            margin: 0 auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            color: #333;
+            font-size: 2.5em;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .nav-btn {
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .nav-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .section {
+            margin-bottom: 40px;
+        }
+
+        .section-title {
+            font-size: 1.5em;
+            color: #333;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .upload-section {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 50px;
+            margin-bottom: 30px;
+        }
+
+        .file-input-wrapper {
+            margin-bottom: 20px;
+        }
+
+        .file-input-label {
+            display: block;
+            padding: 25px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 10px;
+            cursor: pointer;
+            text-align: center;
+            font-weight: 600;
+            font-size: 1.2em;
+            transition: all 0.3s ease;
+        }
+
+        .file-input-label:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .upload-btn {
+            width: 100%;
+            padding: 20px;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.3em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 15px;
+        }
+
+        .upload-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(245, 87, 108, 0.4);
+        }
+
+        .upload-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .status-section {
+            margin-top: 30px;
+            padding: 30px;
+            border-radius: 12px;
+            display: none;
+        }
+
+        .status-section.show {
+            display: block;
+        }
+
+        .status-section.processing {
+            background: #d1ecf1;
+            border: 1px solid #0c5460;
+            color: #0c5460;
+        }
+
+        .status-section.success {
+            background: #d4edda;
+            border: 1px solid #28a745;
+            color: #155724;
+        }
+
+        .status-section.error {
+            background: #f8d7da;
+            border: 1px solid #dc3545;
+            color: #721c24;
+        }
+
+        .status-message {
+            font-size: 1.1em;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .status-details {
+            font-size: 0.95em;
+            margin-top: 10px;
+        }
+
+        .repositories-section {
+            margin-top: 40px;
+        }
+
+        .view-repos-btn {
+            width: 100%;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.3em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
+        }
+
+        .view-repos-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .repositories-dropdown {
+            display: none;
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 15px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .repositories-dropdown.show {
+            display: block;
+        }
+
+        .repository-item {
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #e9ecef;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .repository-item:hover {
+            background: #e9ecef;
+            transform: translateX(5px);
+        }
+
+        .repository-name {
+            font-weight: 600;
+            color: #333;
+            font-size: 1.2em;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border: 2px solid #666;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .message {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            display: none;
+        }
+
+        .message.show {
+            display: block;
+        }
+
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .message.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .file-info {
+            margin-top: 15px;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+            font-size: 0.9em;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Variable Repository</h1>
+            <div class="nav-buttons">
+                <a href="/" class="nav-btn">Home</a>
+                <a href="/history.html" class="nav-btn">History</a>
+            </div>
+        </div>
+
+        <!-- Message Display -->
+        <div id="message" class="message"></div>
+
+        <!-- Upload CSV Section -->
+        <div class="section">
+            <div class="section-title">Upload CSV</div>
+            <div class="upload-section">
+                <div class="file-input-wrapper">
+                    <label for="csvFile" class="file-input-label">
+                        📁 Choose CSV File
+                    </label>
+                    <input type="file" id="csvFile" accept=".csv" />
+                </div>
+                <button id="uploadBtn" class="upload-btn" onclick="handleUpload()">
+                    Upload CSV
+                </button>
+                <div id="fileInfo" class="file-info" style="display: none;"></div>
+            </div>
+
+            <!-- Status Section -->
+            <div id="statusSection" class="status-section">
+                <div class="status-message" id="statusMessage"></div>
+                <div class="status-details" id="statusDetails"></div>
+            </div>
+        </div>
+
+        <!-- View Existing Repositories Section -->
+        <div class="section repositories-section">
+            <div class="section-title">View Existing Variable Repository</div>
+            <button class="view-repos-btn" onclick="toggleRepositories()">
+                <span id="reposBtnText">View Existing Variable Repository</span>
+                <span id="reposBtnArrow">▼</span>
+            </button>
+            <div id="repositoriesDropdown" class="repositories-dropdown">
+                <div style="text-align: center; padding: 20px; color: #666;">
+                    <span class="loading"></span> Loading repositories...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentUploadId = null;
+        let pollingInterval = null;
+        let repositoriesLoaded = false;
+
+        // File input change handler
+        document.getElementById('csvFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const fileInfo = document.getElementById('fileInfo');
+                fileInfo.style.display = 'block';
+                fileInfo.innerHTML = `
+                    <strong>Selected File:</strong> ${file.name}<br>
+                    <strong>Size:</strong> ${(file.size / 1024).toFixed(2)} KB
+                `;
+            }
+        });
+
+        // Handle CSV upload
+        async function handleUpload() {
+            const fileInput = document.getElementById('csvFile');
+            const file = fileInput.files[0];
+
+            if (!file) {
+                showMessage('Please select a CSV file first.', 'error');
+                return;
+            }
+
+            if (file.type !== 'text/csv' && !file.name.endsWith('.csv')) {
+                showMessage('Please select a valid CSV file.', 'error');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('csv', file);
+
+            // Disable upload button
+            const uploadBtn = document.getElementById('uploadBtn');
+            uploadBtn.disabled = true;
+            uploadBtn.textContent = 'Uploading...';
+
+            // Show processing status
+            const statusSection = document.getElementById('statusSection');
+            statusSection.className = 'status-section show processing';
+            document.getElementById('statusMessage').textContent = 'PROCESSING';
+            document.getElementById('statusDetails').textContent = 'Uploading CSV file...';
+
+            try {
+                const response = await fetch('/api/variable-repo/upload', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || 'Upload failed');
+                }
+
+                const data = await response.json();
+
+                if (data.success) {
+                    currentUploadId = data.data.uploadId;
+                    showMessage(`CSV uploaded successfully! Upload ID: ${currentUploadId}`, 'success');
+                    
+                    // Start polling for output (backend polling, UI shows PROCESSING only)
+                    startPolling(currentUploadId);
+                } else {
+                    throw new Error(data.message || 'Upload failed');
+                }
+            } catch (error) {
+                console.error('Upload error:', error);
+                showMessage(`Upload failed: ${error.message}`, 'error');
+                statusSection.className = 'status-section show error';
+                document.getElementById('statusMessage').textContent = 'Upload Failed';
+                document.getElementById('statusDetails').textContent = error.message;
+                
+                // Re-enable upload button
+                uploadBtn.disabled = false;
+                uploadBtn.textContent = 'Upload CSV';
+            }
+        }
+
+        // Start polling for output JSON (backend polling)
+        function startPolling(uploadId) {
+            // Clear any existing polling
+            if (pollingInterval) {
+                clearInterval(pollingInterval);
+            }
+
+            const statusSection = document.getElementById('statusSection');
+            const statusMessage = document.getElementById('statusMessage');
+            const statusDetails = document.getElementById('statusDetails');
+
+            // Keep showing PROCESSING status
+            statusSection.className = 'status-section show processing';
+            statusMessage.textContent = 'PROCESSING';
+            statusDetails.textContent = 'Processing your CSV file...';
+
+            // Poll every 5 seconds
+            pollingInterval = setInterval(async () => {
+                try {
+                    const response = await fetch(`/api/variable-repo/status/${uploadId}`);
+                    
+                    if (!response.ok) {
+                        throw new Error('Failed to check status');
+                    }
+
+                    const data = await response.json();
+
+                    if (data.success && data.ready) {
+                        // Output JSON is ready
+                        clearInterval(pollingInterval);
+                        pollingInterval = null;
+
+                        // Parse and display the message
+                        const outputData = data.data;
+                        let displayMessage = '';
+                        let statusClass = 'success';
+
+                        if (outputData.message) {
+                            // Check if it's a success message
+                            if (outputData.message.includes('Successfully uploaded') && 
+                                outputData.message.includes('variables to repository')) {
+                                displayMessage = 'Your variable repository has been uploaded';
+                                statusClass = 'success';
+                            } else {
+                                displayMessage = outputData.message;
+                                statusClass = 'success';
+                            }
+                        } else {
+                            displayMessage = 'Processing completed successfully';
+                            statusClass = 'success';
+                        }
+
+                        // Update status display
+                        statusSection.className = `status-section show ${statusClass}`;
+                        statusMessage.textContent = '✅ Complete';
+                        statusDetails.innerHTML = `
+                            <div style="margin-top: 10px;">
+                                <strong>${displayMessage}</strong>
+                            </div>
+                            ${outputData.message ? `<div style="margin-top: 10px; font-size: 0.9em;">${outputData.message}</div>` : ''}
+                        `;
+
+                        showMessage(displayMessage, 'success');
+
+                        // Re-enable upload button
+                        const uploadBtn = document.getElementById('uploadBtn');
+                        uploadBtn.disabled = false;
+                        uploadBtn.textContent = 'Upload CSV';
+
+                        // Reset file input
+                        document.getElementById('csvFile').value = '';
+                        document.getElementById('fileInfo').style.display = 'none';
+                    }
+                    // If not ready, continue showing PROCESSING (no UI update needed)
+                } catch (error) {
+                    console.error('Polling error:', error);
+                    // Continue polling even on error (silently)
+                }
+            }, 5000); // Poll every 5 seconds
+        }
+
+        // Toggle repositories dropdown
+        async function toggleRepositories() {
+            const dropdown = document.getElementById('repositoriesDropdown');
+            const btnText = document.getElementById('reposBtnText');
+            const btnArrow = document.getElementById('reposBtnArrow');
+
+            if (dropdown.classList.contains('show')) {
+                // Hide dropdown
+                dropdown.classList.remove('show');
+                btnArrow.textContent = '▼';
+            } else {
+                // Show dropdown
+                dropdown.classList.add('show');
+                btnArrow.textContent = '▲';
+
+                // Load repositories if not already loaded
+                if (!repositoriesLoaded) {
+                    await loadRepositories();
+                }
+            }
+        }
+
+        // Load repositories from Qdrant
+        async function loadRepositories() {
+            const dropdown = document.getElementById('repositoriesDropdown');
+            
+            dropdown.innerHTML = '<div style="text-align: center; padding: 20px; color: #666;"><span class="loading"></span> Loading repositories...</div>';
+
+            try {
+                const response = await fetch('/api/variable-repo/repositories');
+                
+                if (!response.ok) {
+                    throw new Error('Failed to fetch repositories');
+                }
+
+                const data = await response.json();
+
+                if (data.success && data.data.repositories) {
+                    const repositories = data.data.repositories;
+                    repositoriesLoaded = true;
+
+                    if (repositories.length === 0) {
+                        dropdown.innerHTML = '<div style="text-align: center; padding: 20px; color: #666;">No repositories found.</div>';
+                    } else {
+                        dropdown.innerHTML = repositories.map(repo => `
+                            <div class="repository-item">
+                                <div class="repository-name">${repo}</div>
+                            </div>
+                        `).join('');
+                    }
+                } else {
+                    throw new Error('Invalid response format');
+                }
+            } catch (error) {
+                console.error('Error loading repositories:', error);
+                dropdown.innerHTML = `<div style="text-align: center; padding: 20px; color: #dc3545;">Error loading repositories: ${error.message}</div>`;
+            }
+        }
+
+        // Show message
+        function showMessage(text, type) {
+            const messageDiv = document.getElementById('message');
+            messageDiv.textContent = text;
+            messageDiv.className = `message show ${type}`;
+            
+            // Auto-hide after 5 seconds
+            setTimeout(() => {
+                messageDiv.classList.remove('show');
+            }, 5000);
+        }
+
+        // Cleanup polling on page unload
+        window.addEventListener('beforeunload', () => {
+            if (pollingInterval) {
+                clearInterval(pollingInterval);
+            }
+        });
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,5 @@
+wonderlend-doc-extract/
+.env/
+wonderlendFrontend/
+SECURITY-PIPELINE.md/
+amplify.yml/
